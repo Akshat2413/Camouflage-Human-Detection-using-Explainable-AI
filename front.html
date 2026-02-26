@@ -55,7 +55,8 @@
         .metric-value { font-family:var(--mono); font-size:1.6rem; font-weight:700; color:var(--accent); }
 
         /* ── Main grid ── */
-        .main-grid { display:grid; grid-template-columns:1fr 380px; gap:16px; }
+        .main-grid { display:grid; grid-template-columns:1fr 360px; gap:16px; align-items:stretch; }
+        .main-grid > .left-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
         .panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
         .panel-head { display:flex; align-items:center; justify-content:space-between;
             padding:14px 20px; border-bottom:1px solid var(--border); background:var(--panel); }
@@ -140,7 +141,7 @@
         .score-pill { font-family:var(--mono); font-size:0.72rem; padding:3px 10px;
             border-radius:4px; background:rgba(0,212,255,0.1); border:1px solid var(--border); }
 
-        /* ── Action buttons ── */
+        /* ── Action buttons (inside detection panel) ── */
         .action-row { display:flex; gap:10px; flex-wrap:wrap; }
         .action-btn { font-family:var(--mono); font-size:0.75rem; padding:8px 18px;
             border-radius:6px; border:none; cursor:pointer; transition:all 0.2s; letter-spacing:1px; }
@@ -152,10 +153,18 @@
         .btn-report:hover  { background:rgba(0,255,140,0.22); }
         .btn-report:disabled { opacity:0.4; cursor:not-allowed; }
 
-        /* ── Chat ── */
-        .chat-panel { display:flex; flex-direction:column; height:100%; }
-        .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex;
-            flex-direction:column; gap:12px; min-height:200px; max-height:400px; }
+        /* ── RIGHT COLUMN: chat + pdf button stacked ── */
+        .right-col { display:flex; flex-direction:column; gap:12px; height:100%; }
+        .chat-panel-wrap { flex:1; display:flex; flex-direction:column; min-height:0; background:var(--surface); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+        .chat-messages {
+            overflow-y:auto;
+            padding:16px;
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+            flex:1;
+            min-height:0;
+        }
         .chat-messages::-webkit-scrollbar { width:4px; }
         .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
         .msg { display:flex; flex-direction:column; gap:4px; max-width:88%; }
@@ -169,7 +178,7 @@
             padding:1px 6px; border-radius:3px; margin-top:3px; }
         .source-badge.rule { background:rgba(0,255,140,0.12); color:var(--green); border:1px solid var(--green); }
         .source-badge.rag  { background:rgba(168,85,247,0.12); color:#c084fc; border:1px solid #a855f7; }
-        .chat-footer { padding:14px 16px; border-top:1px solid var(--border); display:flex; gap:8px; }
+        .chat-footer { padding:12px 14px; border-top:1px solid var(--border); display:flex; gap:8px; }
         .chat-input { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:7px;
             padding:9px 13px; color:var(--text); font-family:var(--sans); font-size:0.82rem;
             outline:none; transition:border-color 0.2s; }
@@ -184,6 +193,30 @@
         .typing-dots span:nth-child(2){animation-delay:0.2s}
         .typing-dots span:nth-child(3){animation-delay:0.4s}
         @keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+
+        /* ── PDF Report Button (below chat) ── */
+        .pdf-report-btn {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            width:100%;
+            padding:13px 20px;
+            background: linear-gradient(135deg, rgba(0,255,140,0.08), rgba(0,255,140,0.14));
+            border:1px solid var(--green);
+            border-radius:10px;
+            color:var(--green);
+            font-family:var(--mono);
+            font-size:0.82rem;
+            font-weight:700;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            cursor:pointer;
+            transition:all 0.2s;
+        }
+        .pdf-report-btn:hover:not(:disabled) {
+            background:rgba(0,255,140,0.22);
+            box-shadow:0 0 18px rgba(0,255,140,0.25);
+        }
+        .pdf-report-btn:disabled { opacity:0.4; cursor:not-allowed; }
+        .pdf-icon { font-size:1.1rem; }
 
         /* ── Sweep ── */
         .sweep { position:absolute; left:0; width:100%; height:3px;
@@ -228,6 +261,7 @@
             .main-grid{grid-template-columns:1fr}
             .metrics-strip{grid-template-columns:repeat(2,1fr)}
             .image-row{grid-template-columns:1fr}
+            .right-col { flex-direction:column; }
         }
     </style>
 </head>
@@ -272,7 +306,7 @@
     <div class="main-grid">
 
         <!-- LEFT -->
-        <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="left-col">
 
             <!-- Upload + Scan -->
             <div class="panel">
@@ -326,7 +360,7 @@
                         <button class="action-btn btn-explain" id="explainBtn" onclick="generateExplanations()">
                             🧠 GENERATE XAI EXPLANATIONS
                         </button>
-                        <button class="action-btn btn-report" id="reportBtn" onclick="downloadReport()">
+                        <button class="action-btn btn-report" id="reportBtnInline" onclick="downloadReport()">
                             📄 DOWNLOAD REPORT
                         </button>
                     </div>
@@ -343,55 +377,64 @@
                 </div>
             </div>
 
-            <!-- XAI Panel -->
-            <div class="panel">
+
+        </div><!-- /left-col -->
+
+        <!-- RIGHT COLUMN: Chat + PDF button -->
+        <div class="right-col">
+
+            <!-- Chat Panel -->
+            <div class="chat-panel-wrap">
                 <div class="panel-head">
-                    <span class="panel-title">🧠 GradCAM++ &amp; LIME Explainability</span>
+                    <span class="panel-title">💬 AI Explanation Chat</span>
                 </div>
-                <div class="panel-body">
-                    <div id="xaiCards">
-                        <div class="xai-empty">Run a scan to see GradCAM++ and LIME heatmaps</div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="msg bot">
+                        <div class="msg-bubble">
+                            Hello! I'm your AI Surveillance Assistant.<br>
+                            Upload an image and run a scan, then ask me anything about the detections.<br>
+                            <span style="font-size:0.75rem;color:var(--muted)">
+                                Powered by Rule-based + FAISS RAG — fully local.
+                            </span>
+                        </div>
+                        <span class="msg-meta">XCAM-Bot</span>
                     </div>
+                </div>
+                <div class="chat-footer">
+                    <input class="chat-input" id="chatInput" type="text"
+                           placeholder="Ask about detections..."
+                           onkeydown="if(event.key==='Enter')sendChat()">
+                    <button class="chat-send" id="chatSend" onclick="sendChat()">➤</button>
                 </div>
             </div>
 
-        </div>
+            <!-- PDF Report Button -->
+            <button class="pdf-report-btn" id="pdfReportBtn" onclick="downloadReport()">
+                <span class="pdf-icon">📄</span>
+                DOWNLOAD PDF REPORT
+            </button>
 
-        <!-- RIGHT: Chat -->
-        <div class="panel" style="display:flex;flex-direction:column;">
-            <div class="panel-head">
-                <span class="panel-title">💬 AI Explanation Chat</span>
-            </div>
-            <div class="chat-messages" id="chatMessages">
-                <div class="msg bot">
-                    <div class="msg-bubble">
-                        Hello! I'm your AI Surveillance Assistant.<br>
-                        Upload an image and run a scan, then ask me anything about the detections.<br>
-                        <span style="font-size:0.75rem;color:var(--muted)">
-                            Powered by Rule-based + FAISS RAG — fully local.
-                        </span>
-                    </div>
-                    <span class="msg-meta">XCAM-Bot</span>
-                </div>
-            </div>
-            <div class="chat-footer">
-                <input class="chat-input" id="chatInput" type="text"
-                       placeholder="Ask about detections..."
-                       onkeydown="if(event.key==='Enter')sendChat()">
-                <button class="chat-send" id="chatSend" onclick="sendChat()">➤</button>
-            </div>
         </div>
 
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════
-         RESULTS SECTION (bottom — shown after scan + explain)
-         ══════════════════════════════════════════════════════════ -->
+    <!-- XAI Panel -->
+    <div class="panel">
+        <div class="panel-head">
+            <span class="panel-title">🧠 GradCAM++ &amp; LIME Explainability</span>
+        </div>
+        <div class="panel-body">
+            <div id="xaiCards">
+                <div class="xai-empty">Run a scan to see GradCAM++ and LIME heatmaps</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULTS SECTION -->
     <div class="results-section" id="resultsSection">
 
         <div class="section-divider"><span>📊 FULL DETECTION RESULTS</span></div>
 
-        <!-- Summary bar -->
         <div class="metrics-strip" style="margin-bottom:16px;">
             <div class="metric-card">
                 <div class="metric-label">Total Persons</div>
@@ -411,7 +454,6 @@
             </div>
         </div>
 
-        <!-- Per-person result cards -->
         <div class="results-grid" id="resultsGrid"></div>
 
     </div>
@@ -489,7 +531,6 @@ async function startScan() {
     btn.disabled    = true;
     btn.textContent = '⏳ SCANNING...';
 
-    // Hide old results
     document.getElementById('resultsSection').classList.remove('visible');
     document.getElementById('actionRow').style.display = 'none';
 
@@ -516,7 +557,6 @@ async function startScan() {
         renderDetectionList(data.detections);
         renderXAICards(data.xai_images, data.detections);
 
-        // Show action buttons
         if (data.detections && data.detections.length > 0) {
             document.getElementById('actionRow').style.display = 'flex';
         }
@@ -534,7 +574,7 @@ async function startScan() {
 function renderDetectionList(detections) {
     const list = document.getElementById('detectionList');
     if (!detections || !detections.length) {
-        list.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);padding:8px 0;">No persons passed ResNet verification.<br><span style="font-size:0.75rem;color:var(--orange);">⚠️ Confidence was below 50% threshold. This is normal for heavy camouflage.</span></div>';
+        list.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);padding:8px 0;">No persons passed ResNet verification.<br><span style="font-size:0.75rem;color:var(--orange);">⚠️ Confidence was below 50% threshold.</span></div>';
         return;
     }
     list.innerHTML = detections.map((d, i) => {
@@ -550,7 +590,7 @@ function renderDetectionList(detections) {
     }).join('');
 }
 
-// ── XAI Cards (GradCAM++ + LIME per person) ───────────────────
+// ── XAI Cards ─────────────────────────────────────────────────
 function renderXAICards(xaiImages, detections) {
     const container = document.getElementById('xaiCards');
     if (!xaiImages || !xaiImages.length) {
@@ -561,7 +601,6 @@ function renderXAICards(xaiImages, detections) {
         const det   = detections[i] || {};
         const score = det.resnet_score || 0;
         const level = score >= 0.9 ? 'HIGH' : score >= 0.7 ? 'MEDIUM' : 'LOW';
-        const color = score >= 0.9 ? 'var(--red)' : score >= 0.7 ? 'var(--orange)' : 'var(--green)';
         return `
         <div class="xai-person-card" id="xaiCard${i+1}">
             <div class="xai-person-head">
@@ -589,26 +628,23 @@ function renderXAICards(xaiImages, detections) {
                         <div class="xai-thumb-label">LIME</div>
                     </div>
                 </div>
-                <!-- Explanation injected here after generate -->
                 <div id="xaiExpl${i+1}"></div>
             </div>
         </div>`;
     }).join('');
 }
 
-// ── Generate Explanations with Progress Bar ────────────────────
+// ── Generate Explanations ─────────────────────────────────────
 async function generateExplanations() {
     const btn = document.getElementById('explainBtn');
     btn.disabled = true;
 
-    // Show progress
     const pw    = document.getElementById('progressWrap');
     const fill  = document.getElementById('progressFill');
     const label = document.getElementById('progressLabel');
     const steps = document.getElementById('progressSteps');
     pw.classList.add('visible');
 
-    // Animate progress in stages
     const stages = [
         { pct:15, text:'Retrieving domain knowledge from FAISS...' },
         { pct:35, text:'Analyzing GradCAM++ activation maps...' },
@@ -637,12 +673,7 @@ async function generateExplanations() {
         label.textContent = `✅ Explanations ready for ${data.total} person(s)`;
         steps.textContent = `All steps complete`;
 
-        // Inject explanation into each XAI card
-        data.explanations.forEach((expl, i) => {
-            renderExplanationInCard(expl, i + 1);
-        });
-
-        // Render bottom results section
+        data.explanations.forEach((expl, i) => renderExplanationInCard(expl, i + 1));
         renderResultsSection(data.explanations);
 
         setTimeout(() => pw.classList.remove('visible'), 3000);
@@ -693,12 +724,11 @@ function renderExplanationInCard(expl, personIdx) {
         </div>`;
 }
 
-// ── Results section at bottom ─────────────────────────────────
+// ── Results section ───────────────────────────────────────────
 function renderResultsSection(explanations) {
     const section = document.getElementById('resultsSection');
     section.classList.add('visible');
 
-    // Summary stats
     const total  = explanations.length;
     const high   = explanations.filter(e => e.threat_level === 'HIGH').length;
     const medium = explanations.filter(e => e.threat_level === 'MEDIUM').length;
@@ -711,7 +741,6 @@ function renderResultsSection(explanations) {
     document.getElementById('resMedThreat').textContent    = medium;
     document.getElementById('resAvgConf').textContent      = avgConf + '%';
 
-    // Per-person cards
     const grid = document.getElementById('resultsGrid');
     grid.innerHTML = explanations.map((e, i) => `
         <div class="result-card">
@@ -753,15 +782,15 @@ function renderResultsSection(explanations) {
         </div>
     `).join('');
 
-    // Scroll to results
     section.scrollIntoView({ behavior:'smooth' });
 }
 
 // ── Download Report ───────────────────────────────────────────
 async function downloadReport() {
-    const btn = document.getElementById('reportBtn');
-    btn.disabled    = true;
-    btn.textContent = '⏳ GENERATING...';
+    const btn1 = document.getElementById('reportBtnInline');
+    const btn2 = document.getElementById('pdfReportBtn');
+    if (btn1) { btn1.disabled = true; btn1.textContent = '⏳ GENERATING...'; }
+    if (btn2) { btn2.disabled = true; btn2.textContent = '⏳ GENERATING REPORT...'; }
 
     try {
         const res  = await fetch(`${API_URL}/api/report`);
@@ -769,7 +798,6 @@ async function downloadReport() {
         const data = await res.json();
         lastReport  = data;
 
-        // Build printable HTML report
         const html = buildReportHTML(data);
         const blob = new Blob([html], { type:'text/html' });
         const url  = URL.createObjectURL(blob);
@@ -782,8 +810,8 @@ async function downloadReport() {
     } catch (err) {
         alert('Report error: ' + err.message);
     } finally {
-        btn.disabled    = false;
-        btn.textContent = '📄 DOWNLOAD REPORT';
+        if (btn1) { btn1.disabled = false; btn1.textContent = '📄 DOWNLOAD REPORT'; }
+        if (btn2) { btn2.disabled = false; btn2.innerHTML = '<span class="pdf-icon">📄</span> DOWNLOAD PDF REPORT'; }
     }
 }
 
@@ -827,7 +855,7 @@ function buildReportHTML(data) {
             .summary-card{background:#0d1a27;border:1px solid #1e3448;border-radius:6px;padding:12px;text-align:center;}
             .summary-card .val{font-family:monospace;font-size:1.4rem;font-weight:700;}
             .summary-card .lbl{font-size:0.7rem;color:#4a6a82;text-transform:uppercase;}
-            @media print{body{background:#fff;color:#000;} h1,h2{color:#0066aa;} }
+            @media print{body{background:#fff;color:#000;} h1,h2{color:#0066aa;}}
         </style></head><body>
         <h1>👁️ XCAM-Detect Surveillance Report</h1>
         <div class="meta">
@@ -860,7 +888,7 @@ function buildReportHTML(data) {
 
 // ── Lightbox ──────────────────────────────────────────────────
 function openLightbox(src, caption) {
-    document.getElementById('lightboxImg').src        = src;
+    document.getElementById('lightboxImg').src             = src;
     document.getElementById('lightboxCaption').textContent = caption || '';
     document.getElementById('lightbox').classList.add('open');
 }
